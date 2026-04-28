@@ -67,6 +67,7 @@
       investmentRows: [],
       sourceCompanies: [],
       shareholderSheets: [],
+      globalSeenNames: new Set(),
       settings,
       stopAt: Date.now() + settings.timeoutSeconds * 1000,
       timeoutReached: false
@@ -81,6 +82,7 @@
     const rootData = await fetchEnterprisePlate(orgid, "", collector);
     const rootName = rootData.orgname || orgid;
     collector.rootCompanyName = rootName;
+    collector.globalSeenNames.add(rootName);
     collector.sourceCompanies.push({ id: orgid, name: rootName, level: 1 });
     collectPersonnel(rootData, collector, rootName);
 
@@ -128,7 +130,7 @@
       if (String(company.type) !== "1") {
         continue;
       }
-      if (seenCompanyNames.has(company.name)) {
+      if (seenCompanyNames.has(company.name) || collector.globalSeenNames.has(company.name)) {
         continue;
       }
       collector.investmentRows.push({
@@ -138,6 +140,7 @@
         subjectName: company.name
       });
       seenCompanyNames.add(company.name);
+      collector.globalSeenNames.add(company.name);
       collector.sourceCompanies.push({ id: company.id, name: company.name, level: nextLevel });
       taskFactories.push(async () =>
         safeCrawlInvestmentNode({
@@ -238,11 +241,13 @@
     if (
       existingCompanyNames.has(holder.name) ||
       existingHolderNames.has(holder.name) ||
-      existingAllNames.has(holder.name)
+      existingAllNames.has(holder.name) ||
+      collector.globalSeenNames.has(holder.name)
     ) {
       return null;
     }
     existingHolderNames.add(holder.name);
+    collector.globalSeenNames.add(holder.name);
 
     const context = {
       rows: [["一级", "", "", holder.name]],
@@ -296,12 +301,17 @@
       if (shouldStop(context.collector)) {
         break;
       }
-      if (String(company.type) !== "1" || context.seenCompanyNames.has(company.name)) {
+      if (
+        String(company.type) !== "1" ||
+        context.seenCompanyNames.has(company.name) ||
+        context.collector.globalSeenNames.has(company.name)
+      ) {
         continue;
       }
       context.rows.push([toLevelText(level), companyName, normalizeRatio(company.info), company.name]);
       recordDiscoveredCompany(context, company.id, company.name, level);
       context.seenCompanyNames.add(company.name);
+      context.collector.globalSeenNames.add(company.name);
       if (level + 1 > context.collector.settings.shareholderLevel) {
         continue;
       }
@@ -333,7 +343,11 @@
       if (shouldStop(context.collector)) {
         break;
       }
-      if (String(company.type) !== "1" || context.seenCompanyNames.has(company.name)) {
+      if (
+        String(company.type) !== "1" ||
+        context.seenCompanyNames.has(company.name) ||
+        context.collector.globalSeenNames.has(company.name)
+      ) {
         continue;
       }
       context.rows.push([
@@ -344,6 +358,7 @@
       ]);
       recordDiscoveredCompany(context, company.id, company.name, level);
       context.seenCompanyNames.add(company.name);
+      context.collector.globalSeenNames.add(company.name);
       if (level + 1 > context.collector.settings.shareholderLevel) {
         continue;
       }
