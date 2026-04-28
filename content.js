@@ -491,13 +491,14 @@
   }
 
   async function fetchEnterprisePlate(orgid, position, collector) {
+    assertNotTimedOut(collector);
     const params = new URLSearchParams({
       orgid,
       v: "v1",
       position: position || ""
     });
     const url = `${API_BASE}/enterprise_plates?${params.toString()}`;
-    const body = await fetchJsonWithRetry(url, 3, collector.settings.requestTimeoutMs);
+    const body = await fetchJsonWithRetry(url, 3, collector.settings.requestTimeoutMs, collector);
     if (!body || body.status_code !== 0 || !body.data) {
       throw new Error(`企业接口返回异常：${body && body.status_msg ? body.status_msg : "未知错误"}`);
     }
@@ -505,24 +506,27 @@
   }
 
   async function fetchPersonExtend(rwid, collector) {
+    assertNotTimedOut(collector);
     const params = new URLSearchParams({
       rwid,
       v: "v1",
       position: "left"
     });
     const url = `${API_BASE}/enterprise_extends?${params.toString()}`;
-    const body = await fetchJsonWithRetry(url, 3, collector.settings.requestTimeoutMs);
+    const body = await fetchJsonWithRetry(url, 3, collector.settings.requestTimeoutMs, collector);
     if (!body || body.status_code !== 0 || !body.data) {
       throw new Error(`股东接口返回异常：${body && body.status_msg ? body.status_msg : "未知错误"}`);
     }
     return body.data;
   }
 
-  async function fetchJsonWithRetry(url, maxAttempts, timeoutMs) {
+  async function fetchJsonWithRetry(url, maxAttempts, timeoutMs, collector) {
     let lastError = null;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      assertNotTimedOut(collector);
+      const currentTimeoutMs = Math.max(1, Math.min(timeoutMs, getRemainingMs(collector)));
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const timer = setTimeout(() => controller.abort(), currentTimeoutMs);
       try {
         const response = await fetch(url, {
           method: "GET",
@@ -538,11 +542,25 @@
         clearTimeout(timer);
         lastError = error;
         if (attempt < maxAttempts) {
+          assertNotTimedOut(collector);
           await sleep(attempt * 300);
         }
       }
     }
     throw lastError || new Error("请求失败");
+  }
+
+  function getRemainingMs(collector) {
+    if (!collector || !Number.isFinite(collector.stopAt)) {
+      return 1;
+    }
+    return Math.max(0, collector.stopAt - Date.now());
+  }
+
+  function assertNotTimedOut(collector) {
+    if (shouldStop(collector)) {
+      throw new Error("已达到时间限制，停止后续对外请求。");
+    }
   }
 
   function sleep(ms) {
