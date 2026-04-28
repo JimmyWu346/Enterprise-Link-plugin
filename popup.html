@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>企业关系导出</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>企业关系导出</h1>
+
+      <label class="field">
+        <span>超时时间（秒）</span>
+        <input id="timeoutSeconds" type="number" min="1" />
+      </label>
+
+      <label class="field">
+        <span>投资层级</span>
+        <input id="investmentLevel" type="number" min="1" />
+      </label>
+
+      <label class="field">
+        <span>股东层级</span>
+        <input id="shareholderLevel" type="number" min="1" />
+      </label>
+
+      <div class="actions">
+        <button id="getCookieBtn" type="button">获取cookie</button>
+        <button id="extractBtn" type="button">提取excel</button>
+        <button id="resetBtn" type="button">重置设置</button>
+      </div>
+
+      <p id="status" class="status"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "企业关系递归导出",
+  "version": "1.0.0",
+  "description": "按股东与对外投资链路递归抓取并导出 Excel。",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://zsk-cmis.cicpa.org.cn/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://zsk-cmis.cicpa.org.cn/*"
+  ]
+}
