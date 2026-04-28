@@ -253,6 +253,7 @@
 
     if (String(holder.type) === "1") {
       context.seenCompanyNames.add(holder.name);
+      recordDiscoveredCompany(context, holder.id, holder.name, 1);
       await appendCompanyInvestmentRows({
         orgid: holder.id,
         companyName: holder.name,
